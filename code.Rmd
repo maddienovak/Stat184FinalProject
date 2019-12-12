@@ -1,0 +1,241 @@
+
+---
+title: "Stat 184 Final Project" 
+subtitle: "WildFires in Portugal vs Brazil"
+author: "Madison Novak "
+output: html_notebook
+---
+
+## Research Question
+
+forest_fires dataset: wild forest fires that occured in Portugal from 2000-2007 with columns of wind, temp, day, month, etc.
+
+
+amazon dataset: wild forest fires that took place in Brazil
+
+***Guiding Question:***
+
+What factors come into play regarding forest fires in Portugal? 
+
+What my main goal for this project is to discover and investigate some correlation between the brazil forest fires data and the portugal forest fires data. Over the recent years, news has broken out over how our enviroment is suffering and I want to know if these forest fires are a cause of global warmingfrom over the past two decades. I think this could be imortant on also investigating the weather when these fires take place to see if there is also a correlation between that. Ultimately, I am looking for any sign that points to weather is a dependent factor for impacting these countries with more wild forest fires. 
+
+## Data Access
+
+```{r}
+#cleaning up workspace enviroment
+rm(list = ls())
+```
+
+```{r}
+library(tidyverse)
+library(plyr)
+library(dplyr)
+
+```
+
+```{r}
+#import data from github 
+library(readr)
+amazon <- read_csv("amazon.csv")
+forest_fires <- read_csv("forestfires (3).csv")
+```
+
+```{r}
+#inspecting data
+head(amazon, n = 10)
+head(forest_fires, n = 10)
+names(forest_fires)
+nrow(amazon)
+nrow(forest_fires)
+```
+***We can see that 517 rows come from the forest_fires which will be my primary source for this project. The amazon does have 6454 rows but this dataset has less columns so I will be usng the dorest_fires dataset as my primary data source.***
+
+## Data Wrangling 
+
+```{r}
+#grouping fires by month and day of the week (portugal)
+forest_fires %>%
+  group_by(month, day)
+
+
+#creating smaller table with just month, number of fires, and country 
+port_fires <- ddply(forest_fires, .(forest_fires$month, forest_fires$day), nrow)
+names(port_fires) <- c("month", "day", "number")
+#adding new column of country
+port_fires$country <- "portugal"
+#deleting unwanted columns
+port_fires$day <- NULL
+
+port_fires <- aggregate(cbind(number)~month, data = port_fires, FUN = sum)
+port_fires$country <- "portugal"
+
+```
+
+
+-- Next I will be sorting through the amazon dataset to only have the years of 2000 to 2007. 
+
+```{r}
+#organzing Brazil (amazon) dataset
+
+brazil <- amazon %>% 
+  filter(grepl("2000|2001|2002|2003|2004|2005|2006|2007", year, ignore.case = TRUE))
+         
+```
+
+--Here I needed to divided the number of fires in Brazil by 1000 to be able to look at both brazil and portugal on the same scale. Since I am more looking at the time(month) when fires outbreak instead of the numbers, I felt that it would only benefit me to do this. 
+
+```{r}
+#fires by month (brazil)
+brazil_fires <- brazil %>%
+  filter(number != 0.000) %>%
+  group_by(month) 
+
+brazil_fires <- transform(brazil_fires, number = number / 1000)
+#deleting unwanted columns
+brazil_fires$year <- NULL
+brazil_fires$state <- NULL
+brazil_fires$date <- NULL
+
+brazil_fires <- aggregate(cbind(number)~month, data = brazil_fires, FUN = sum)
+
+#adding new column of country
+brazil_fires$country <- "brazil"
+
+
+```
+
+--Looking to see if there are any cool trends regarding the actual name of that state
+```{r}
+amazon %>% 
+  filter(grepl("[^aeiou]{3,}", state, ignore.case = TRUE) ) 
+```
+
+
+
+***Making sure to add a column with the country names was important for when joining the two table and then making a plot***
+
+--Joining the brazil_fire and port_fires to be able to plot fires for the month 
+```{r}
+month_total <- inner_join(x=brazil_fires, y = port_fires, by="country", all=TRUE)
+month_total <- rbind(brazil_fires, port_fires)
+```
+
+```{r}
+new <- spread(month_total, country, number)
+```
+
+
+
+## Data Visualization
+
+--This plot is relevant to the states research question for analysis. This graph plus the two below show that wild forest fires variables vary from enviroment to enviroment. This makes it hard to be able to see which predictors there are for weather that causes fires
+
+
+```{r}
+ggplot(month_total, aes(x = month, y = number)) + 
+  geom_line(aes(group=2)) + geom_point() + facet_wrap(~country) + labs(title = "Number of Fires per Month", x = "Month", y = "Count")
+```
+--As you can see from this graph it shows that in Brazil forest fires happen all the time no matter what month or season. But for the fires in Portugal they are much more related to the months and season. 
+
+***Fires in Portugal are most likely to happen in Aug and Sept where fires in Brazil seem to be more seratic and happen every month***
+
+
+--Density for Both Brazil and Portugal 
+
+```{r}
+ggplot(month_total,aes(x=number, fill=country)) + geom_density(alpha=0.25) + labs(title = "Density for Brazil and Portugal", x = "Number", y = "Density" )
+
+```
+
+
+--Looking at Brazil density of fire by itself
+
+```{r}
+d <- density(brazil_fires$number)
+plot(d, main="Kernel Density of Fire Number")
+polygon(d, col="red", border="blue")
+```
+***You can see from the two density graphs that the Brazil data has more density than Portugal.***
+
+
+
+--Since Portugal is my Primary source data I am going to look at the following graphs in order to be able to determine which features of the forest_fires are most predictable if any. 
+
+```{r}
+ggplot(forest_fires, aes(month, temp)) + 
+  geom_point() + 
+  stat_summary(geom = "point", fun.y = "mean", colour = "green", size = 4)
+```
+
+```{r}
+#Graph Temp vs Fire Count
+forest_fires %>%
+  ggplot(aes( x = temp )) +
+  geom_histogram(size = 1, alpha = 0.5, binwidth = 5) + facet_wrap(~month) + labs(title = "Temperautre Vs Fire Count", x = "Temperature", y = "Count" ) +
+  theme(legend.position = "top")
+```
+
+--These graphs really showing that Temperature is the biggest factor for fire counts. As the Temperature increases the average temperature stays relatively the same for the months with greater fire counts. The lower temperature averages show less fires counts, showing the impact temperature has on fires in Portugal.
+
+***From this information, I will be building upon both Month and Temperature since they show to be the most predictive.***
+
+---Now I want to incorporate other variables in the forest_fires dataset
+
+```{r}
+#Graph Wind Vs. Fire Count
+forest_fires %>%
+  ggplot(aes( x = wind )) +
+  geom_histogram(size = 1, alpha = 0.5, binwidth = 5) + facet_wrap(~month) + labs( title = "Wind Vs. Fire Count")
+  xlab("Wind")  +
+  theme(legend.position = "top")
+```
+
+--This graph shows the wind does not really impact the amount of fires since fires have happen at wind from 0 to 10. 
+month_total <- rbind(brazil_fires, port_fires)
+
+```{r}
+ggplot(forest_fires, aes(month,temp , col=DMC)) + 
+  geom_point() +  labs( title = "Affect of DMC on Month and Temp")
+  geom_smooth()
+  stat_smooth() 
+```
+--DMC has greater impact on the amount of fires with regards to the temperature and month. When the DMC is over 200 (lighter blue) it is more likely for fires to outbreak in Portugal. ***
+
+
+```{r}
+ggplot(forest_fires, aes(month,temp , col=ISI)) + 
+  geom_point() +  labs( title = "Affect of ISI on Month and Temp")
+  geom_smooth()
+  stat_smooth() 
+```
+-- This graphic clearly shows that the IST (defintion) is not really relevant to finding when forest fires will occur. As you can see from the month they are all dark blue and not really making a difference in the number of forest fires. This just reconfirms that Temperature plays the biggest impact on forest fires.
+
+```{r}
+ggplot(forest_fires, aes(month,temp , col=FFMC)) + 
+  geom_point() +  labs( title = "Affect of FFMC on Month and Temp")
+  geom_smooth()
+  stat_smooth() 
+```
+-- FFMC is independent from the amount of forest fires so we can again disregard this information for our analysis. 
+
+```{r}
+ggplot(forest_fires, aes(month,temp , col=DC)) + 
+  geom_point() +  labs( title = "Affect of DC on Month and Temp")
+  geom_smooth()
+  stat_smooth() 
+```
+
+```{r}
+ggplot(forest_fires, aes(month,temp , col=RH)) + 
+  geom_point() +  labs( title = "Affect of RH on Month and Temp")
+  geom_smooth()
+  stat_smooth() 
+  
+```
+
+--The lower the RH shows that it impacts the amounts of fires. This shows us that RH is another factor in the amount of forest fires in Portugal. 
+
+
+## Conclusion
+
+From this exploratory data analysis I was able to find that Brazil and Portugal have no correlation regarding their forest fires. I know a partial reason for this was because the Brazil data was so limited and didn't give many details. I still think it was very interesting to see how Brazil has fires spiratically and it doesn't depend on the months. But on the other hand for Portugal, it was very apparent that August and Septemeber were the most likely months for fires. Temperature was a variable that played a huge role in the causes for fires in addition to ***DMC***, ***DC***, and ***RH*** for wild fires in Portugal. 
