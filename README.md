@@ -1,4 +1,4 @@
-# Stat 184 Final Project
+# Maddie Novak Stat 184 Final Project
 
 Final Project in RStudio for Statistics 184.
 
