@@ -1,7 +1,7 @@
 
 ---
 title: "Stat 184 Final Project" 
-subtitle: "WildFires in Portugal vs Brazil"
+subtitle: "Wildfires in Portugal"
 author: "Madison Novak "
 output: html_notebook
 ---
@@ -35,7 +35,7 @@ output: html_notebook
 
 ***Guiding Question:***
 
-What factors come into play regarding forest fires in Portugal? 
+What variables are most correlated regarding forest fires in Portugal? 
 
 What my main goal for this project is to discover and investigate some correlation between the variables given in the forest_fires dataset and number of fires. Over the recent years, news has broken out over how our enviroment is suffering and I want to know if these forest fires are a cause of global warming from over the past two decades. I want to see if any of the variables given in the forest_fires dataset correlate with the number of fires in Portugal. In addition to this, I am going to be exploring the number of fires in each month for both Brazil and Portugal. Since my dataset for Brazil was not as detailed as Portugal dataset, I will NOT be investigating the factors that cause Brazil fires but only Portugal. 
 
@@ -234,7 +234,7 @@ ggplot(forest_fires, aes(month,temp , col=ISI)) +
   geom_smooth()
   stat_smooth() 
 ```
-- This graphic clearly shows that the IST (defintion) is not really relevant to finding when forest fires will occur. As you can see from the month they are all dark blue and not really making a difference in the number of forest fires. This just reconfirms that Temperature plays the biggest impact on forest fires.
+- This graphic clearly shows that the ISI is not really relevant to finding when forest fires will occur. As you can see from the month they are all dark blue and not really making a difference in the number of forest fires. This just reconfirms that Temperature plays the biggest impact on forest fires.
 
 ```{r}
 ggplot(forest_fires, aes(month,temp , col=FFMC)) + 
@@ -261,10 +261,14 @@ ggplot(forest_fires, aes(month,temp , col=RH)) +
   
 ```
 
---The lower the RH shows that it impacts the amounts of fires. This shows us that RH is another factor in the amount of forest fires in Portugal. 
+- The lower the RH shows that it impacts the amounts of fires. This shows us that RH is another factor in the amount of forest fires in Portugal. 
 
 
 ## Conclusion
 
 From this exploratory data analysis I was able to find that Brazil and Portugal have no correlation regarding their forest fires. I know a partial reason for this was because the Brazil data was so limited and didn't give many details. I still think it was very interesting to see how Brazil has fires spiratically and it doesn't depend on the months. But on the other hand for Portugal, it was
-very apparent that August and Septemeber were the most likely months for fires. Temperature was a variable that played a huge role in the causes for fires in addition to ***DMC***, ***DC***, and ***RH*** for wild fires in Portugal. 
+very apparent that August and Septemeber were the most likely months for fires.
+
+***Guiding Question Answer***
+
+The varaibles that are most correlated to forest fires in Portugal are ***Temperature***, ***DMC***, ***DC***, and ***RH*** from the forest_fires dataset.
